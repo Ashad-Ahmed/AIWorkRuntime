@@ -1,41 +1,18 @@
 # AI Work Runtime (AWR)
 
-AI Work Runtime is a durable orchestration runtime for AI tasks. Every task is a persistent `WorkItem` in a work graph, not a transient function call, prompt chain, or chat turn.
+AI Work Runtime is an early foundation for managing autonomous AI work as durable, observable work items instead of transient chains or conversations.
 
-AWR is meant to answer operational questions such as what is running now, why it exists, what it depends on, whether it can be paused/resumed/retried/cancelled, and what happened over time.
+The runtime owns lifecycle, scheduling, dependency management, lineage, persistence, and events. Agents remain simple stateless workers that execute assigned work.
 
-## Current MVP architecture
+## MVP scope
 
-At runtime, components are composed as a small local control plane:
+This repository starts Phase 1 of the roadmap:
 
-1. CLI receives operational commands such as `create`, `run`, `pause`, and `lineage`.
-2. `WorkRegistry` creates and updates work while enforcing lifecycle transitions.
-3. `DependencyManager` checks unresolved dependencies and active blockers.
-4. `Scheduler` picks runnable work using the default priority-first policy.
-5. `EventBus` emits every significant action and writes it to durable storage.
-6. `SQLiteRuntimeStore` stores work items and immutable events.
-7. Optional agent adapters execute external work, starting with the LLM gateway smoke adapter.
-
-## Core modules
-
-- `awr/domain/`: `WorkItem`, `Status`, lifecycle transition guards, artifacts, metadata, lineage fields, costs, tokens, dependencies, blockers, and timestamps.
-- `awr/runtime/`: lifecycle registry, dependency manager, scheduler policy, stats, and graph snapshots.
-- `awr/storage/`: storage protocols and the SQLite backend.
-- `awr/events/`: in-process pub/sub event bus with durable sink integration.
-- `awr/agents/`: minimal `execute(work_item)` agent contract and LLM gateway adapter.
-- `awr/cli/`: local operational command surface.
-
-## Implemented today
-
+- `WorkItem` domain model with statuses and lifecycle validation.
 - Durable SQLite-backed work registry.
-- Guarded lifecycle state machine for created, planned, ready, running, completed, failed, retrying, waiting-human, approved, paused, and cancelled work.
-- Dependency-aware scheduling that only considers ready/approved work with completed dependencies and inactive blockers.
-- Default scheduler policy: lower numeric priority first, then older work.
-- Control operations for pause, resume, cancel, retry, approve, and run.
-- Parent-child lineage queries for answering why a task exists.
-- Immutable event log in `runtime_events` for baseline observability.
-- Artifact and metadata capture on `WorkItem`.
-- LLM gateway smoke command using environment-configured credentials.
+- Dependency-aware scheduler that only selects ready work.
+- Event log for observable lifecycle changes.
+- Basic CLI for creating, listing, and advancing work.
 
 ## Quick start
 
@@ -43,39 +20,18 @@ At runtime, components are composed as a small local control plane:
 python -m venv .venv
 source .venv/bin/activate
 pip install -e .
-awr create "Research competitors" --description "Find market alternatives" --ready
+awr create "Research competitors" --description "Find market alternatives"
 awr list
-awr graph
-awr run
-awr events
+awr ready
 ```
 
 By default the CLI stores runtime state in `awr.sqlite` in the current directory. Override it with `--db path/to/runtime.sqlite`.
 
-## CLI surface
+## Design principles
 
-```text
-create, list, graph, events, run
-pause, resume, cancel, retry, approve, lineage
-gateway-smoke --prompt "..."
-```
-
-## LLM gateway smoke setup
-
-Copy `.env.example` if you want a local place to track gateway configuration. The runtime reads environment variables directly:
-
-```bash
-export AWR_LLM_GATEWAY_URL="https://example.com/gateway"
-export AWR_LLM_GATEWAY_API_KEY="..."
-awr gateway-smoke --prompt "Say hello"
-```
-
-If `AWR_LLM_GATEWAY_URL` is not set, the smoke adapter returns a deterministic local message and still exercises lifecycle, event, and artifact capture.
-
-## Not implemented yet
-
-- REST API server.
-- Dashboard UI.
-- Distributed workers and multi-user execution.
-- LangGraph, CrewAI, AutoGen, Temporal, Airflow, and MCP adapters.
-- Deadline/cost/agent-capacity-aware scheduling policies.
+1. Work is durable.
+2. Every task is observable.
+3. Every action is recoverable.
+4. Every artifact has lineage.
+5. Agents are stateless workers whenever possible.
+6. The runtime is the single source of truth.
