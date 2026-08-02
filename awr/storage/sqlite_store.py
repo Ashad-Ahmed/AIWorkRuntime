@@ -54,17 +54,10 @@ class SQLiteRuntimeStore:
                 type TEXT NOT NULL,
                 work_item_id TEXT,
                 payload TEXT NOT NULL,
-                created_at TEXT NOT NULL,
-                producer TEXT NOT NULL DEFAULT 'runtime',
-                version INTEGER NOT NULL DEFAULT 1
+                created_at TEXT NOT NULL
             );
             """
         )
-        columns = {row["name"] for row in self.connection.execute("PRAGMA table_info(runtime_events)")}
-        if "producer" not in columns:
-            self.connection.execute("ALTER TABLE runtime_events ADD COLUMN producer TEXT NOT NULL DEFAULT 'runtime'")
-        if "version" not in columns:
-            self.connection.execute("ALTER TABLE runtime_events ADD COLUMN version INTEGER NOT NULL DEFAULT 1")
         self.connection.commit()
 
     def save_work_item(self, item: WorkItem) -> None:
@@ -94,8 +87,8 @@ class SQLiteRuntimeStore:
 
     def append_event(self, event: Event) -> None:
         self.connection.execute(
-            "INSERT INTO runtime_events (id, type, work_item_id, payload, created_at, producer, version) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (event.id, event.type, event.work_item_id, json.dumps(event.payload), event.created_at.isoformat(), event.producer, event.version),
+            "INSERT INTO runtime_events (id, type, work_item_id, payload, created_at) VALUES (?, ?, ?, ?, ?)",
+            (event.id, event.type, event.work_item_id, json.dumps(event.payload), event.created_at.isoformat()),
         )
         self.connection.commit()
 
@@ -108,8 +101,6 @@ class SQLiteRuntimeStore:
                 payload=json.loads(row["payload"]),
                 id=row["id"],
                 created_at=datetime.fromisoformat(row["created_at"]),
-                producer=row["producer"],
-                version=row["version"],
             )
             for row in rows
         ]

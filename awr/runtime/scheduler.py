@@ -53,7 +53,6 @@ class Scheduler:
                     "title": item.title,
                     "status": item.status.value,
                     "priority": item.priority,
-                    "worker_assignment": item.owner_agent,
                 }
                 for item in items
             ],
@@ -66,10 +65,5 @@ class Scheduler:
                 {"from": dependency_id, "to": item.id, "type": "dependency"}
                 for item in items
                 for dependency_id in item.dependency_ids
-            ]
-            + [
-                {"from": blocker_id, "to": item.id, "type": "blocker"}
-                for item in items
-                for blocker_id in item.blockers
             ],
         }
