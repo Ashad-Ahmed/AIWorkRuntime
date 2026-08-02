@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import argparse
 import json
+from dataclasses import asdict
 
 from awr.agents import LLMGatewayAgent
+from awr.config import RuntimeConfig, StorageConfig
 from awr.domain import Status, WorkItem
-from awr.runtime import Scheduler, WorkRegistry
+from awr.runtime import RuntimeEngine, Scheduler, WorkRegistry
 from awr.storage.sqlite_store import SQLiteRuntimeStore
 
 
@@ -25,7 +27,7 @@ def build_parser() -> argparse.ArgumentParser:
     create.add_argument("--blocker", action="append", default=[])
     create.add_argument("--ready", action="store_true")
 
-    for command in ("list", "graph", "events", "run"):
+    for command in ("list", "graph", "events", "run", "status", "metrics", "workers", "replay", "recover"):
         subparsers.add_parser(command)
     for command in ("pause", "resume", "cancel", "retry", "approve", "lineage"):
         sub = subparsers.add_parser(command)
@@ -59,6 +61,26 @@ def _dispatch(args: argparse.Namespace, registry: WorkRegistry, store: SQLiteRun
         )
         registry.create(item)
         print(item.id)
+        return 0
+    if args.command == "status":
+        engine = RuntimeEngine(RuntimeConfig(storage=StorageConfig(path=store.database_path)), store=store, registry=registry)
+        print(json.dumps(engine.metrics(), indent=2))
+        return 0
+    if args.command == "metrics":
+        engine = RuntimeEngine(RuntimeConfig(storage=StorageConfig(path=store.database_path)), store=store, registry=registry)
+        print(json.dumps(engine.metrics(), indent=2))
+        return 0
+    if args.command == "workers":
+        engine = RuntimeEngine(RuntimeConfig(storage=StorageConfig(path=store.database_path)), store=store, registry=registry)
+        print(json.dumps([asdict(worker) for worker in engine.workers_status()], default=list, indent=2))
+        return 0
+    if args.command == "replay":
+        engine = RuntimeEngine(RuntimeConfig(storage=StorageConfig(path=store.database_path)), store=store, registry=registry)
+        print(json.dumps({key: asdict(value) for key, value in engine.replay().items()}, indent=2))
+        return 0
+    if args.command == "recover":
+        engine = RuntimeEngine(RuntimeConfig(storage=StorageConfig(path=store.database_path)), store=store, registry=registry)
+        print(json.dumps(engine.recover(), indent=2))
         return 0
     if args.command == "list":
         for item in registry.list():
