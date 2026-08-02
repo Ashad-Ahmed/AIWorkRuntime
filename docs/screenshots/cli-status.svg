@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="280" role="img" aria-label="AWR CLI status screenshot">
+  <rect width="100%" height="100%" fill="#0d1117"/>
+  <text x="24" y="40" fill="#58a6ff" font-family="monospace" font-size="20">AI WORK RUNTIME</text>
+  <text x="24" y="82" fill="#c9d1d9" font-family="monospace" font-size="16">Status            Running</text>
+  <text x="24" y="114" fill="#c9d1d9" font-family="monospace" font-size="16">Executors         3</text>
+  <text x="24" y="146" fill="#c9d1d9" font-family="monospace" font-size="16">Queued            2</text>
+  <text x="24" y="178" fill="#c9d1d9" font-family="monospace" font-size="16">Completed         18</text>
+  <text x="24" y="210" fill="#c9d1d9" font-family="monospace" font-size="16">Scheduler         Priority Scheduler</text>
+</svg>
